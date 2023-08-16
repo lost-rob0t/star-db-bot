@@ -5,7 +5,7 @@ import json, jsony
 import asyncdispatch
 import cligen
 import os
-
+import strutils
 proc getRev(db: AsyncCouchDBClient, database, id: string): Future[string] {.async.} =
   let rev = await db.getDoc(database, id)
   # TODO get mycouch to use the E-tag header
@@ -56,9 +56,8 @@ proc mainLoop(client: Client, db: AsyncCouchDBClient) {.async.} =
 
 proc main(apiAddress: string = "tcp://127.0.0.1:6001", publisherAddress: string = "tcp://127.0.0.1:6000") =
   var client = newClient("couchdb", publisherAddress, apiAddress, 10, @["Username"])
-  var db = newAsyncCouchDBClient()
-  discard waitFor db.cookieAuth(getEnv("DB_USER"), getEnv("DB_PASS"))
-  echo "end of setup"
+  var db = newAsyncCouchDBClient(getEnv("DB_HOST", "http://127.0.0.1"), getEnv("DB_PORT", "5984").parseInt())
+  discard waitFor db.cookieAuth(getEnv("DB_USER", "admin"), getEnv("DB_PASS", "password"))
   waitFor mainLoop(client, db)
 
 
