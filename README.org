@@ -1,0 +1,5 @@
+#+title: Readme
+
+* starRouter couchdb writer
+This is a actor that writes  to couchdb by being a subscriber
+service discover is yet to be implemented in starintel so you will still need to query couchdb for now.
