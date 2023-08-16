@@ -13,3 +13,6 @@ bin           = @["databaseActor"]
 requires "nim >= 1.6.14"
 requires "mycouch"
 requires "zmq"
+requires "cligen"
+requires "dotenv"
+requires "starRouter"
