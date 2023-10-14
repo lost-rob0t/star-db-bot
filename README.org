@@ -3,3 +3,14 @@
 * starRouter couchdb writer
 This is a actor that writes  to couchdb by being a subscriber
 service discover is yet to be implemented in starintel so you will still need to query couchdb for now.
+
+* config
+the db actor can have its options set by env or cli args
++ DB_NAME: name of database to use
++ DB_USER: name of db admin
++ DB_PASSWORD: password of db_admin
++ DB_HOST: host of couchdb
++ DB_PORT port for couchdb, should be 5984
++ COUCH_DB_LOG_LEVEL: set log level, defaults its info....
++ ROUTER_API_ADDRESS: api address of starRouter. defaults to tcp://127.0.0.1:6001
++ ROUTER_API_ADDRESS: pup address of starRouter. defaults to tcp://127.0.0.1:6000
