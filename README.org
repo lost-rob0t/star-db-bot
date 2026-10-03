@@ -14,3 +14,12 @@ the db actor can have its options set by env or cli args
 + COUCH_DB_LOG_LEVEL: set log level, defaults its info....
 + ROUTER_API_ADDRESS: api address of starRouter. defaults to tcp://127.0.0.1:6001
 + ROUTER_API_ADDRESS: pup address of starRouter. defaults to tcp://127.0.0.1:6000
+
+* Canonical StarIntel 0.10.1
+The actor now validates incoming flat documents with the immutable generated Nim
+consumer before adding CouchDB storage metadata. =id= remains intact; =_id= and
+=_rev= are storage-only fields. Invalid/legacy documents are rejected rather than
+relabelled. Depends on starintel-doc.nim PR #15, commit
+=827f2c072e9893561a1925c47f898458bafd6759= and StarLang's generated 0.10.1 release.
+Run =nim c -r --path:<starintel-doc.nim>/src tests/test_storage_document.nim=.
+PCRE must be available in the runtime library path (provided by the Nix shell).

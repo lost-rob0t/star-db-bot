@@ -19,7 +19,7 @@
         ];
         shellHook = ''
 
-              export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath([pkgs.zeromq])}
+              export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath([pkgs.zeromq pkgs.pcre])}
             '';
       };
   };

@@ -1,3 +1,4 @@
+import storage_document
 import starRouter
 import mycouch
 import morelogging
@@ -44,7 +45,7 @@ proc upsert(actor: DatabaseActor, doc: JsonNode) {.async.} =
     let oldDoc = await actor.db.getDoc(actor.dbName, id)
     var newDoc = doc
     let rev = oldDoc["_rev"].getStr()
-    newDoc["rev"] = newJString(rev)
+    newDoc["_rev"] = newJString(rev)
     let upsert = await actor.db.createOrUpdateDoc(actor.dbName, id, rev, newDoc)
     actor.log.info($upsert)
   except Exception as e:
@@ -56,10 +57,12 @@ proc mainLoop*(router: Client, actor: DatabaseActor) =
     inbox = string.newInbox(500)
     t = now().toTime().toUnix()
   proc handleMessage(doc: Message[string]) {.async.} =
-    var document = doc.data.parseJson()
-    let id = document["id"]
-    document["_id"] = %id
-    document.delete("id")
+    var document: JsonNode
+    try:
+      document = storageDocument(doc.data.parseJson())
+    except CatchableError as e:
+      actor.logError(e)
+      return
     try:
       let insertInfo = await actor.db.createDoc(actor.dbName, document)
       actor.log.info($insertInfo)
