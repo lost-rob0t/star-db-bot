@@ -1,0 +1,19 @@
+name: Canonical storage boundary
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: '2.2.4'
+      - run: sudo apt-get update && sudo apt-get install -y libpcre3
+      - uses: actions/checkout@v4
+        with:
+          repository: lost-rob0t/starintel-doc.nim
+          ref: 827f2c072e9893561a1925c47f898458bafd6759
+          path: .canonical-runtime
+      - run: nim c -r --path:.canonical-runtime/src tests/test_storage_document.nim
