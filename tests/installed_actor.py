@@ -141,8 +141,10 @@ ssl_trusted_certificates_file = {os.environ['SSL_CERT_FILE']}
         subprocess.run([actor_bin, "--help"], cwd=work, env=actor_env,
                        check=True, timeout=15, stdout=subprocess.DEVNULL)
         actor = start("actor", [actor_bin], actor_env)
-        eventually(lambda: "DatabaseActor connected to StarRouter" in
-                   (work / "actor.log").read_text(), "actor broker registration")
+        def actor_ready():
+            assert actor.poll() is None, "actor exited during startup"
+            return "DatabaseActor connected to StarRouter" in (work / "actor.log").read_text()
+        eventually(actor_ready, "actor broker registration")
         time.sleep(0.3)  # Allow the actual PUB/SUB subscription handshake.
         document = {"id": "document:fixture", "dataset": "fixture", "dtype": "document",
                     "schemaVersion": "0.10.1", "deleted": False,

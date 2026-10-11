@@ -10,7 +10,9 @@ for x86_64-linux. It reuses the immutable Router and document producer inputs,
 pins every Nim source dependency, and compiles with --noNimblePath. Libraries
 and the CA bundle are in the installed runtime closure. A two-site compatibility
 patch reads named splitFile fields in pinned morelogging for Nim 2; it preserves
-the existing asynchronous logger and filename behavior.
+the existing asynchronous logger and filename behavior. Pinned mycouch constructors
+use Nim's peer-verifying environment-aware TLS context so the installed CA bundle
+is honored even when the host has no OS certificate directories.
 
 #+begin_src sh
 nix build --no-update-lock-file
