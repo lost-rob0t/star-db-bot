@@ -15,7 +15,12 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
       python = pkgs.python3.withPackages (p: [ p.pyzmq ]);
-      paths = "--noNimblePath --path:src --path:${starintel-doc}/src --path:${star-router}/src --path:${mycouch}/src --path:${macroutils}/src --path:${macroplus}/src --path:${morelogging} --path:${zip} --path:${star-router.inputs.cligen} --path:${star-router.inputs.zmq} --path:$TMPDIR/ulid-deps";
+      loggingSource = pkgs.applyPatches {
+        name = "morelogging-nim2";
+        src = morelogging;
+        patches = [ ./nix/morelogging-nim2.patch ];
+      };
+      paths = "--noNimblePath --path:src --path:${starintel-doc}/src --path:${star-router}/src --path:${mycouch}/src --path:${macroutils}/src --path:${macroplus}/src --path:${loggingSource} --path:${zip} --path:${star-router.inputs.cligen} --path:${star-router.inputs.zmq} --path:$TMPDIR/ulid-deps";
       libraries = pkgs.lib.makeLibraryPath [ pkgs.zeromq pkgs.pcre pkgs.openssl pkgs.zlib ];
       actor = pkgs.stdenv.mkDerivation {
         pname = "databaseActor";

@@ -8,7 +8,9 @@ service discover is yet to be implemented in starintel so you will still need to
 The locked producer exports default/databaseActor packages, apps and a check
 for x86_64-linux. It reuses the immutable Router and document producer inputs,
 pins every Nim source dependency, and compiles with --noNimblePath. Libraries
-and the CA bundle are in the installed runtime closure.
+and the CA bundle are in the installed runtime closure. A two-site compatibility
+patch reads named splitFile fields in pinned morelogging for Nim 2; it preserves
+the existing asynchronous logger and filename behavior.
 
 #+begin_src sh
 nix build --no-update-lock-file
