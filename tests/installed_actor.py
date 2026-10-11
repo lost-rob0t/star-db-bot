@@ -120,13 +120,15 @@ ssl_trusted_certificates_file = {os.environ['SSL_CERT_FILE']}
         broker = start("broker", [broker_bin, "--apiAddress=" + api_address,
                                    "--pubAddress=" + pub_address], os.environ.copy())
         api = context.socket(zmq.DEALER)
-        api.setsockopt(zmq.IDENTITY, b"packaging-fixture")
+        # Router derives the registered actor name from the source-ID prefix.
+        publisher = b"fixture-publisher"
+        api.setsockopt(zmq.IDENTITY, publisher)
         api.setsockopt(zmq.RCVTIMEO, 10000)
         api.setsockopt(zmq.SNDTIMEO, 10000)
         api.connect(api_address)
 
         def send(event, value, topic=b"document"):
-            api.send_multipart([b"", b"SC01", b"packaging-fixture", b"fixture:message",
+            api.send_multipart([b"", b"SC01", publisher, b"fixture:message",
                                 str(int(time.time())).encode(), str(event).encode(),
                                 topic, json.dumps(value).encode()])
             return api.recv_multipart()
@@ -187,3 +189,7 @@ ssl_trusted_certificates_file = {os.environ['SSL_CERT_FILE']}
                 log.seek(0)
                 print(log.read()[-4000:], file=sys.stderr)
             log.close()
+        actor_log = work / "actor-private.log"
+        if sys.exc_info()[0] is not None and actor_log.exists():
+            # Contains only this disposable fixture's synthetic operations.
+            print(actor_log.read_text()[-4000:], file=sys.stderr)
