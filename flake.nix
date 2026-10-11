@@ -73,7 +73,10 @@
       devShells.${system}.default = pkgs.mkShell {
         packages = [ pkgs.nim python pkgs.couchdb3 star-router.packages.${system}.default ];
         LD_LIBRARY_PATH = libraries;
-        SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+        # nix develop filters SSL_CERT_FILE from its captured build environment.
+        shellHook = ''
+          export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
+        '';
       };
     };
 }
