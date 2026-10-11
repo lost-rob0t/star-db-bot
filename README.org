@@ -32,6 +32,13 @@ StarRouter, checks accepted writes/readback and malformed-document rejection,
 then terminates the actor and services. All state and generated fixture
 credentials live in a temporary directory; no live DB/corpus is contacted.
 
+The Dockerfile builds this same locked Nix package and copies its closed runtime
+into the image; it performs no independent Nimble dependency resolution. Docker
+CI runs the same actual CouchDB/StarRouter fixture through the container,
+including password-file startup and rejected authentication. The workflow only
+builds and tests locally on its runner; image publication and deployment are
+separate operator actions.
+
 the db actor can have its options set by env or cli args
 + DB_NAME: name of database to use
 + DB_USER: name of db admin

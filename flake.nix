@@ -71,8 +71,9 @@
       };
       checks.${system}.default = actor;
       devShells.${system}.default = pkgs.mkShell {
-        packages = [ pkgs.nim python ];
+        packages = [ pkgs.nim python pkgs.couchdb3 star-router.packages.${system}.default ];
         LD_LIBRARY_PATH = libraries;
+        SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
       };
     };
 }
