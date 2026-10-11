@@ -1,0 +1,21 @@
+name: Locked database actor
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  nix:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: cachix/install-nix-action@v31
+      - name: Check storage boundary and installed local CouchDB/broker pipeline
+        run: nix flake check --no-update-lock-file -L
+      - name: Run flake apps outside checkout
+        run: |
+          source_root=$PWD
+          nix build --no-update-lock-file
+          cd "$RUNNER_TEMP"
+          nix run --no-update-lock-file "$source_root#default" -- --help
+          nix run --no-update-lock-file "$source_root#databaseActor" -- --help

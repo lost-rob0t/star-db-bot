@@ -34,6 +34,7 @@ proc login(actor: DatabaseActor) {.async.} =
     actor.log.debug "Logged in!"
   except CouchDBError as e:
     actor.logError(e)
+    raise
 
 proc filterTrue(doc: Message[string]): bool =
   result = true
@@ -80,20 +81,25 @@ proc mainLoop*(router: Client, actor: DatabaseActor) =
 
 proc main(dbName: string = getEnv("DB_NAME", "star-intel"),
           dbUser: string = getEnv("DB_USER", "admin"),
-          dbPass: string = getEnv("DB_PASS", "password"),
+          dbPass: string = getEnv("DB_PASS"),
+          dbPassFile: string = getEnv("DB_PASS_FILE"),
           dbHost: string = getEnv("DB_HOST", "http://127.0.0.1"),
           dbPort: int = getEnv("DB_PORT", "5984").parseInt(),
           level:  string = getEnv("COUCHDB_LOG_LEVEL", "lvlInfo"),
           apiAddress: string = getEnv("ROUTER_API_ADDRESS", "tcp://127.0.0.1:6001"),
           subAddress: string = getEnv("ROUTER_PUB_ADDRESS", "tcp://127.0.0.1:6000")
          ) =
-  var actor = DatabaseActor(dbUser: dbUser, dbPass: dbPass, dbName: dbName)
+  let password = if dbPassFile.len > 0: readFile(dbPassFile).strip() else: dbPass
+  var actor = DatabaseActor(dbUser: dbUser, dbPass: password, dbName: dbName)
   actor.db = newAsyncCouchDBClient(dbHost, dbPort)
   let level = parseEnum[Level](level)
   actor.log = newAsyncFileLogger(filename_tpl=getEnv("COUCHDB_LOG", "$appname.$y$MM$dd.log"), flush_threshold=level)
   waitFor actor.login()
   var client = newClient("couchdb", subAddress, apiAddress, 10_000, @[""])
   waitFor client.connect()
-  client.mainLoop(actor)
+  echo "DatabaseActor connected to StarRouter"
+  stdout.flushFile()
+  try: client.mainLoop(actor)
+  finally: client.close()
 when isMainModule:
   dispatch main

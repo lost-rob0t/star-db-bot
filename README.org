@@ -5,10 +5,34 @@ This is a actor that writes  to couchdb by being a subscriber
 service discover is yet to be implemented in starintel so you will still need to query couchdb for now.
 
 * config
+The locked producer exports default/databaseActor packages, apps and a check
+for x86_64-linux. It reuses the immutable Router and document producer inputs,
+pins every Nim source dependency, and compiles with --noNimblePath. Libraries
+and the CA bundle are in the installed runtime closure.
+
+#+begin_src sh
+nix build --no-update-lock-file
+nix run .#databaseActor -- --help
+nix flake check --no-update-lock-file -L
+DB_PASS_FILE=/run/secrets/couchdb-password nix run .#default
+#+end_src
+
+Set DB_USER and DB_PASS_FILE at runtime. The file is read only when starting
+the actor; no secret belongs in a Nix expression or store path. DB_PASS remains
+available for existing deployments; there is no implicit password default.
+Authentication failure exits before broker registration. Consumers should pin
+this producer revision and use its package/app output.
+
+The installed check starts disposable loopback CouchDB and the actual pinned
+StarRouter, checks accepted writes/readback and malformed-document rejection,
+then terminates the actor and services. All state and generated fixture
+credentials live in a temporary directory; no live DB/corpus is contacted.
+
 the db actor can have its options set by env or cli args
 + DB_NAME: name of database to use
 + DB_USER: name of db admin
-+ DB_PASSWORD: password of db_admin
++ DB_PASS_FILE: path to operator-provided password file (preferred)
++ DB_PASS: password of db_admin (legacy environment option)
 + DB_HOST: host of couchdb
 + DB_PORT port for couchdb, should be 5984
 + COUCH_DB_LOG_LEVEL: set log level, defaults its info....
