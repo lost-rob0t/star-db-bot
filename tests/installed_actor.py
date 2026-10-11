@@ -82,12 +82,19 @@ n = 1
 [log]
 writer = stderr
 level = error
+[replicator]
+ssl_trusted_certificates_file = {os.environ['SSL_CERT_FILE']}
 [admins]
 {user} = {password}
 """)
         config.chmod(0o600)
         args_file = work / "vm.args"
-        args_file.write_text(f"-name fixture_{secrets.token_hex(4)}@127.0.0.1\n"
+        # Retain producer defaults, including -noinput and loopback distribution.
+        default_args = (Path(couch_root) / "etc/vm.args").read_text().splitlines()
+        args_lines = [line for line in default_args if not line.lstrip().startswith(
+            ("-name ", "-setcookie ", "+S ", "+A "))]
+        args_file.write_text("\n".join(args_lines) +
+                             f"\n-name fixture_{secrets.token_hex(4)}@127.0.0.1\n"
                              f"-setcookie {secrets.token_hex(24)}\n+S 2:2\n+A 4\n")
         args_file.chmod(0o600)
         # OTP needs an explicit trust store inside the Nix sandbox:
@@ -101,7 +108,12 @@ level = error
             assert couch.poll() is None, "CouchDB exited during startup"
             return request("/_up").get("status") == "ok"
         eventually(couch_ready, "CouchDB readiness", 60)
-        assert request("/actor_fixture", "PUT")["ok"]
+        for database in ("_users", "_replicator", "_global_changes", "actor_fixture"):
+            try:
+                assert request("/" + database, "PUT")["ok"]
+            except HTTPError as error:
+                if error.code != 412:  # Single-node setup may already create system DBs.
+                    raise
 
         api_address = f"tcp://127.0.0.1:{api_port}"
         pub_address = f"tcp://127.0.0.1:{pub_port}"
