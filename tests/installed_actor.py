@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import shlex
 import signal
 import socket
 import subprocess
@@ -89,10 +90,17 @@ level = error
         args_file.write_text(f"-name fixture_{secrets.token_hex(4)}@127.0.0.1\n"
                              f"-setcookie {secrets.token_hex(24)}\n+S 2:2\n+A 4\n")
         args_file.chmod(0o600)
+        # OTP needs an explicit trust store inside the Nix sandbox:
+        # https://www.erlang.org/doc/apps/public_key/public_key.html#cacerts_load/0
+        ca_argument = shlex.quote(json.dumps(os.environ["SSL_CERT_FILE"]))
         couch_env = {**os.environ, "HOME": str(work), "COUCHDB_ARGS_FILE": str(args_file),
-                     "ERL_FLAGS": f"-couch_ini {couch_root}/etc/default.ini {config}"}
+                     "ERL_FLAGS": (f"-couch_ini {couch_root}/etc/default.ini {config} "
+                                   f"-public_key cacerts_path {ca_argument}")}
         couch = start("couch", [couch_root + "/bin/couchdb"], couch_env)
-        eventually(lambda: request("/_up").get("status") == "ok", "CouchDB readiness", 60)
+        def couch_ready():
+            assert couch.poll() is None, "CouchDB exited during startup"
+            return request("/_up").get("status") == "ok"
+        eventually(couch_ready, "CouchDB readiness", 60)
         assert request("/actor_fixture", "PUT")["ok"]
 
         api_address = f"tcp://127.0.0.1:{api_port}"

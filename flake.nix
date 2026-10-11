@@ -52,6 +52,7 @@
         doInstallCheck = true;
         installCheckPhase = ''
           unset LD_LIBRARY_PATH
+          export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
           python3 tests/installed_actor.py "$out/bin/databaseActor" \
             ${star-router.packages.${system}.default}/bin/starRouter ${pkgs.couchdb3}
         '';
