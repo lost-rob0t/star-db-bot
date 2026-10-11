@@ -1,0 +1,9 @@
+.git
+result
+result-*
+__pycache__
+*.log
+.direnv
+.canonical-runtime
+.env
+.env.*

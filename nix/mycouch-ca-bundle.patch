@@ -1,0 +1,17 @@
+--- a/src/mycouch/api.nim
++++ b/src/mycouch/api.nim
+@@ -2 +2 @@
+-  httpclient, httpcore, asyncdispatch, uri,
++  httpclient, httpcore, asyncdispatch, uri, net,
+@@ -72 +72,4 @@
+-  var client = newHttpClient()
++  when defined(ssl):
++    var client = newHttpClient(sslContext = newContext(verifyMode = CVerifyPeerUseEnvVars))
++  else:
++    var client = newHttpClient()
+@@ -79 +82,4 @@
+-  var client = newAsyncHttpClient()
++  when defined(ssl):
++    var client = newAsyncHttpClient(sslContext = newContext(verifyMode = CVerifyPeerUseEnvVars))
++  else:
++    var client = newAsyncHttpClient()

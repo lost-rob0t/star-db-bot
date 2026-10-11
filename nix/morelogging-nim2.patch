@@ -1,0 +1,12 @@
+--- a/morelogging.nim
++++ b/morelogging.nim
+@@ -199 +199,3 @@
+-  (result.application_dir, result.application_name) = os.getAppFilename().splitFile()
++  let appPath = os.getAppFilename().splitFile()
++  result.application_dir = appPath.dir
++  result.application_name = appPath.name
+@@ -401 +403,3 @@
+-  (result.application_dir, result.application_name) = os.getAppFilename().splitFile()
++  let appPath = os.getAppFilename().splitFile()
++  result.application_dir = appPath.dir
++  result.application_name = appPath.name

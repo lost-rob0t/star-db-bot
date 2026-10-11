@@ -1,3 +1,4 @@
+import storage_document
 import starRouter
 import mycouch
 import morelogging
@@ -33,6 +34,7 @@ proc login(actor: DatabaseActor) {.async.} =
     actor.log.debug "Logged in!"
   except CouchDBError as e:
     actor.logError(e)
+    raise
 
 proc filterTrue(doc: Message[string]): bool =
   result = true
@@ -44,7 +46,7 @@ proc upsert(actor: DatabaseActor, doc: JsonNode) {.async.} =
     let oldDoc = await actor.db.getDoc(actor.dbName, id)
     var newDoc = doc
     let rev = oldDoc["_rev"].getStr()
-    newDoc["rev"] = newJString(rev)
+    newDoc["_rev"] = newJString(rev)
     let upsert = await actor.db.createOrUpdateDoc(actor.dbName, id, rev, newDoc)
     actor.log.info($upsert)
   except Exception as e:
@@ -56,10 +58,12 @@ proc mainLoop*(router: Client, actor: DatabaseActor) =
     inbox = string.newInbox(500)
     t = now().toTime().toUnix()
   proc handleMessage(doc: Message[string]) {.async.} =
-    var document = doc.data.parseJson()
-    let id = document["id"]
-    document["_id"] = %id
-    document.delete("id")
+    var document: JsonNode
+    try:
+      document = storageDocument(doc.data.parseJson())
+    except CatchableError as e:
+      actor.logError(e)
+      return
     try:
       let insertInfo = await actor.db.createDoc(actor.dbName, document)
       actor.log.info($insertInfo)
@@ -77,20 +81,25 @@ proc mainLoop*(router: Client, actor: DatabaseActor) =
 
 proc main(dbName: string = getEnv("DB_NAME", "star-intel"),
           dbUser: string = getEnv("DB_USER", "admin"),
-          dbPass: string = getEnv("DB_PASS", "password"),
+          dbPass: string = getEnv("DB_PASS"),
+          dbPassFile: string = getEnv("DB_PASS_FILE"),
           dbHost: string = getEnv("DB_HOST", "http://127.0.0.1"),
           dbPort: int = getEnv("DB_PORT", "5984").parseInt(),
           level:  string = getEnv("COUCHDB_LOG_LEVEL", "lvlInfo"),
           apiAddress: string = getEnv("ROUTER_API_ADDRESS", "tcp://127.0.0.1:6001"),
           subAddress: string = getEnv("ROUTER_PUB_ADDRESS", "tcp://127.0.0.1:6000")
          ) =
-  var actor = DatabaseActor(dbUser: dbUser, dbPass: dbPass, dbName: dbName)
+  let password = if dbPassFile.len > 0: readFile(dbPassFile).strip() else: dbPass
+  var actor = DatabaseActor(dbUser: dbUser, dbPass: password, dbName: dbName)
   actor.db = newAsyncCouchDBClient(dbHost, dbPort)
   let level = parseEnum[Level](level)
   actor.log = newAsyncFileLogger(filename_tpl=getEnv("COUCHDB_LOG", "$appname.$y$MM$dd.log"), flush_threshold=level)
   waitFor actor.login()
   var client = newClient("couchdb", subAddress, apiAddress, 10_000, @[""])
   waitFor client.connect()
-  client.mainLoop(actor)
+  echo "DatabaseActor connected to StarRouter"
+  stdout.flushFile()
+  try: client.mainLoop(actor)
+  finally: client.close()
 when isMainModule:
   dispatch main
